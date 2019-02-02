@@ -13,6 +13,7 @@ At the time of writing the key improvements I know I need to make include:
 5) It relies on pyautogui and webbrowser rather than a "proper" API.
 6) There are no tests!
 7) This is all there is by way of documentation!
+8) I've managed to speed up the creation of TinyURLs using threading but was unable to run the main task scraping in parallel with selenium + threading or multiprocessing.  I think the reason is the site uses AJAX and selenium was grabbing the page data prematurely then destroying the previous page in order to load a new one.
 
 As well as achieving the end goal which is to create a nicely packaged and shareable tool that other parents can just pickup (probably download from a more "mainstream" website than Github), I think this very journey of getting from where the code is currently at ("functional but amateur/hacked") to that state with the minimum effort is worth documenting, perhaps even as a tutorial.  I know there are many Python newbies like myself who have got to the point of creating something useful, albeit in a vacuum, and are frankly a bit daunted by all the extra learning and steps they have to go through to actually start sharing the tool with end users, or indeed with other friendly Pythonistas who can help improve the quality, security, readability etc. of the code itself.
 
