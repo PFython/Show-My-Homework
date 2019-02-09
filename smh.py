@@ -12,7 +12,6 @@
 
 # Author: peter@southwestlondon.tv
 
-
 import time
 import os
 import sys
