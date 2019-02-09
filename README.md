@@ -20,4 +20,5 @@ As well as achieving the end goal which is to create a nicely packaged and share
 So... all comments and offers of a guiding hand would be awesome and greatly appreciated, not just for me and this particular app, but for other newbies wanting to take this almost universal next step.
 
 Many thanks,
+
 peter@southwestlondon.tv

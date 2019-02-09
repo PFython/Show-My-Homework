@@ -112,7 +112,7 @@ class Secret():
                 p.terminate()
         else:
             print("Sorry, Windows Notepad is that only editor I know how to launch just now...")
-        # TODO: Add default text editors for OSX and Linus
+        # TODO: Add default text editors for OSX and Linux
         return
 
     def load(self):
