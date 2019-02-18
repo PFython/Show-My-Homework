@@ -12,21 +12,21 @@
 
 # Author: peter@southwestlondon.tv
 
-import time
+
 import os
-import sys
-import webbrowser
 import subprocess
-import bs4
+import sys
 import threading
-import pyautogui
+import time
+import bs4
 import pyAesCrypt
+import pyautogui
 import pyshorteners
 from selenium import webdriver
-from pfutils import timer
 
 pyautogui.FAILSAFE = True
-url=r"https://www.showmyhomework.co.uk"
+url = r"https://www.showmyhomework.co.uk"
+
 
 class Secret():
     """
@@ -50,9 +50,9 @@ class Secret():
     security methods.
     """
 
-    def __init__(self,filename="smh-credentials.py"):
-        self.filename=filename
-        self.aesname=filename+".aes"
+    def __init__(self, filename="smh-credentials.py"):
+        self.filename = filename
+        self.aesname = filename+".aes"
         return
 
     def __str__(self):
@@ -75,10 +75,11 @@ class Secret():
         """
         if os.path.isfile(self.filename):
             # Use machine specific ID as password for AES
-            pyAesCrypt.encryptFile(self.filename,self.aesname,self.device_id(),64*1024)
+            pyAesCrypt.encryptFile(
+                self.filename, self.aesname, self.device_id(), 64*1024)
             os.remove(self.filename)
         else:
-            print("Original file",self.filename,"not found.")
+            print("Original file", self.filename, "not found.")
         return
 
     def decrypt(self):
@@ -87,10 +88,11 @@ class Secret():
         """
         if os.path.isfile(self.aesname):
             # Use machine specific ID as password for AES
-            pyAesCrypt.decryptFile(self.aesname,self.filename,self.device_id(),64*1024)
+            pyAesCrypt.decryptFile(
+                self.aesname, self.filename, self.device_id(), 64*1024)
             os.remove(self.aesname)
         else:
-            print("Encrypted file",self.aesname,"not found.")
+            print("Encrypted file", self.aesname, "not found.")
         return
 
     def edit(self):
@@ -104,14 +106,16 @@ class Secret():
         if sys.platform == "win32":
             editor = "notepad.exe"
             p = subprocess.Popen([editor, self.filename])
-            prompt = "\nPress ENTER to re-encrypt "+self.filename+" or any other key to quit: "
+            prompt = "\nPress ENTER to re-encrypt " + \
+                self.filename+" or any other key to quit: "
             i = input(prompt)
             if i == "":
                 self.encrypt()
                 p.terminate()
         else:
-            print("Sorry, Windows Notepad is that only editor I know how to launch just now...")
-        # TODO: Add default text editors for OSX and Linux
+            print(
+                "Sorry, Windows Notepad is that only editor I know how to launch just now...")
+        # TODO: Add default text editors for OSX and Linus
         return
 
     def load(self):
@@ -137,82 +141,49 @@ class Secret():
         try:
             file = importlib.import_module(self.filename.split(".")[0])
         except:
-            print("Unable to import",self.filename)
+            print("Unable to import", self.filename)
         self.encrypt()
         return (file)
 
+
 class Homework:
     """A homework task on showmyhomework.co.uk"""
-    count=0
+    count = 0
     task_list = []
 
     def __init__(self, url):
-        self.url=url
-        self.index=Homework.count
-        Homework.count+=1
+        self.url = url
+        self.index = Homework.count
+        Homework.count += 1
         Homework.task_list.append(self)
-        self.tiny_url=pyshorteners.Shortener('Tinyurl').short(self.url)[7:]
-
-
-    def parse(self,tags):
-        """Rough and ready HTML parser based on tags"""
-        result=str(self.soup.select(tags))
-        result=result.replace("\n","")
-        unwanted=["p","strong","ul","div","u","ol"]
-        for u in unwanted:
-            result=result.replace("<"+u+">","")
-            result=result.replace("</"+u+">","")
-        replacements={"<li>":"\n",
-                      "\xa0":"\n",
-                      "<h1":"",
-                      "</h1>":"",
-                      "[":"",
-                      "]":"",
-                      'class="main-header-title truncate-text">':"",
-                      'p class="homework-description"':"",
-                      "</li>":"",
-                      'div class="well homework-information"':"",
-                      'div class="homework-date issued-on"':"",
-                      'div class="homework-date due-on"':"",
-                      "!-- --":"",
-                      "<":"",
-                      ">":"",
-                      "\t":"",
-                      "<br>":"\n",
-                      "</br>":"",
-                      "<br/>":"",
-                      "Set on ":"",
-                      "Due on ":"",
-                      "Important information":"",
-                      }
-        for key in replacements:
-            result=result.replace(key,replacements[key])
-        result=result.strip(" ")
-        result=result.strip("\n")
-        return(result)
+        self.tiny_url = ""
+        while self.tiny_url == "":
+            self.tiny_url = pyshorteners.Shortener('Tinyurl').short(self.url)[7:]
+        print("http://"+self.tiny_url)
 
     def __str__(self):
         try:
-            self.summary="#"+str(self.index)+": "+self.title+"\n"+self.tiny_url
-            self.summary+="\n"+self.description+"\n"+self.info+"\n"
-            self.summary+=str(self.duration)+" minutes : Issued "+self.issued+": Due "+self.due
+            self.summary = "#"+str(self.index)+": " + \
+                self.title+"\n"+self.tiny_url
+            self.summary += "\n"+self.description+"\n"+self.info+"\n"
+            self.summary += str(self.duration) + \
+                " minutes : Issued "+self.issued+": Due "+self.due
             print(self.summary)
         except:
             print("***Check data/attributes***")
         return("")
 
 
-@timer
-def launch_smh():
+def launch_showmyhomework():
     """Launch ShowMyHomework and login"""
     print("Contacting ShowMyHomework.co.uk...")
     global browser
-    browser=webdriver.Chrome()
-    index_url=r"https://www.showmyhomework.co.uk/todos/issued"
+    browser = webdriver.Chrome()
+    index_url = r"https://www.showmyhomework.co.uk/todos/issued"
     browser.get(index_url)
     time.sleep(1)
-    pyautogui.hotkey("tab")
-    pyautogui.hotkey("tab")
+    # pyautogui.hotkey("tab")
+    # pyautogui.hotkey("tab")
     pyautogui.hotkey("tab")
     pyautogui.hotkey("tab")
     pyautogui.typewrite(secret.ShowMyHomework['school'])
@@ -234,21 +205,21 @@ def launch_smh():
 def get_task_index():
     """Create an index of unfinished homework tasks"""
     page = browser.page_source
-    soup = bs4.BeautifulSoup(page,"html.parser")
-    links=soup.select('h4 a')
-    links=[x["href"] for x in links]
+    soup = bs4.BeautifulSoup(page, "html.parser")
+    links = soup.select('h4 a')
+    links = [x["href"] for x in links]
     # Show My Homework uses this format for links:
     # /homeworks/25797227 or /quizzes/26332980
-    print("\nYou have",len(links),"homeworks outstanding:\n")
+    print("\nYou have", len(links), "homeworks outstanding:\n")
     urls = [url+str(link) for link in links]
     print("\n".join(urls))
     return(urls)
 
-@timer
+
 def initialise_tasks(urls):
     """Create list of task objects and fetch TinyURLs"""
     threads = []
-    print("\nPreparing data and creating TinyURLs...")
+    print("\nPreparing data and creating TinyURLs...\n")
     for url in urls:
         thread = threading.Thread(target=Homework, args=[url])
         thread.start()
@@ -257,58 +228,79 @@ def initialise_tasks(urls):
         thread.join()
     return
 
-def get_task_info(homework):
-    homework.title = ""
-    browser.get(homework.url)
-    while homework.title == "":
-        page = browser.page_source
-        soup = bs4.BeautifulSoup(page,"html.parser")
-        homework.soup=soup
-        homework.title=homework.parse("h1")
-        homework.issued=homework.parse("div.homework-date.issued-on")
-        homework.due=homework.parse("div.homework-date.due-on")
-        homework.description=homework.parse("p.homework-description")
-        homework.info=homework.parse("div.well.homework-information")
-        if "minutes" in homework.info:
-            homework.duration=int(homework.info.split(" minute")[0].split(" ")[-1])
-        elif "hour" in homework.info:
-            homework.duration=int(homework.info.split(" hour")[0].split(" ")[-1])*60
-        else:
-            # Some teachers use SMH as reminders e.g. school play rehearsals
-            homework.duration=0
-        if "quizzes" in homework.url:
-            # Quizzes don't have a duration by default
-            # so using an "odd" number like 21 highlights the fact
-            # the estimate hasn't actually been set by a teacher
-            homework.title=homework.title.replace('class="title"','').split(",")[0].rstrip()
-            homework.duration=21
-        if menu_choice.lower()=="t":
-            webbrowser.open(homework.url)
 
-@timer
+def get_task_info(homework):
+    global browser
+    try:
+        browser.get(homework.url)
+    except Exception as E:
+        print("\n*** STAY CALM AND RUN THE SMH HELPER PROGRAMME AGAIN ***\n")
+        print("Occasionally ShowMyHomework.co.uk isn't ready to talk to us...\n")
+        browser.close()
+    homework.title = ""
+    while homework.title == "":
+        # Wait for AJAX to populate the web page, including a proper title
+        page = browser.page_source
+        soup  = bs4.BeautifulSoup(page, "html.parser")
+        try:
+            homework.title = soup.find("h1", class_="main-header-title truncate-text").text.strip()
+        except:
+            pass
+    homework.issued = soup.find("div", class_="homework-date issued-on").text.strip()
+    homework.due = soup.find("div", class_="homework-date due-on").text.strip()
+    homework.description = soup.find("p", class_="homework-description").text.strip()
+    homework.info = soup.find("div", class_="well homework-information").text.strip()
+    homework.subject = soup.find("div", class_="ember-view teacher-text __assignment-teacher-text__1067e").text.split("- ")[-1].strip()
+
+
+def calculate_duration(homework):
+    """Calculate or estimate duration (mins) for each task"""
+    if "minutes" in homework.info:
+        homework.duration = int(
+            homework.info.split(" minute")[0].split(" ")[-1])
+    elif "hour" in homework.info:
+        homework.duration = int(homework.info.split(" hour")[
+                                0].split(" ")[-1])*60
+    else:
+        # Some teachers use SMH as reminders e.g. school play rehearsals
+        homework.duration = 0
+    if "quizzes" in homework.url:
+        # Quizzes don't have a duration by default
+        # so using an "odd" number like 21 highlights the fact
+        # the estimate hasn't actually been set by a teacher
+        homework.title = homework.title.replace(
+            'class="title"', '').split(",")[0].rstrip()
+        homework.duration = 21
+
+
 def loop_through_tasks():
     """Scrape details of each homework task/page"""
     print("\nGathering Homework details... Please be patient :)\n")
     for count, homework in enumerate(Homework.task_list):
         get_task_info(homework)
-        print("\n*** "+homework.title.upper()+" ***")
+        calculate_duration(homework)
+        print(f"\n*** {homework.subject.upper()}: {homework.title.upper()} ***")
         print(homework.description)
     print()
     return
 
+
 def create_summary():
     """Calculate total duration of all homework tasks"""
-    summary=""
-    total=0
+    summary = ""
+    total = 0
     for task in Homework.task_list:
-        summary+="\n"+str(task.duration)+" mins: "
-        summary+=task.title
-        summary+=": "+task.due+"\n"
-        summary+=task.tiny_url
-        total+=task.duration
-    summary="SMH: "+str(len(Homework.task_list))+" tasks "+str(round(total/60,1))+" hours effort"+summary
+        summary += "\n"+task.subject.upper() +": "
+        summary += task.title + "\n"
+        summary += f"{task.duration} mins "
+        summary += "due"+task.due.split("Due on")[-1]
+        summary += "\n"+task.tiny_url
+        total += task.duration
+    summary = "*SHOW MY HOMEWORK*\n"+str(len(Homework.task_list))+" tasks, " + \
+        str(round(total/60, 1))+" hours effort"+summary
     print(summary)
     return(summary)
+
 
 def send_SMS(msg):
     """Send an SMS text message to selected recipients"""
@@ -318,34 +310,37 @@ def send_SMS(msg):
     twilio_number = secret.Twilio['number']
     print("\nUsing Twilio number: +"+str(twilio_number))
     client = Client(account_sid, auth_token)
-    contacts=[x for x in enumerate(secret.contacts.items())]
+    contacts = [x for x in enumerate(secret.contacts.items())]
     print("\nPlease select 0-9 recipients for SMS text message...")
     print("For example enter '02' for the 0th and 2nd contact in the list.\n")
     print([str(y[0])+": "+y[1][0] for y in contacts])
-    recipients=input("> ").lower()
+    recipients = input("> ").lower()
     print("\nSending SMS to:")
     print([contacts[int(x)][1][0] for x in recipients])
-    i=input("\n(S)end automatically, (C)onfirm each message, or ENTER for Test Mode): ").lower()
+    i = input(
+        "\n(S)end automatically, (C)onfirm each message, or ENTER for Test Mode): ").lower()
     # Format message
     if msg.startswith("#"):
-        msg=msg.replace("\n"," : ")
-    #Twilio maximum message size = 1600 characters
-    msg=msg[:1600]
+        msg = msg.replace("\n", " : ")
+    # Twilio maximum message size = 1600 characters
+    msg = msg[:1600]
     for recipient in recipients:
         name, number = contacts[int(recipient)][1]
         # Hash out the following line while testing, to avoid embarassment!
-        confirmed="No"
+        confirmed = "No"
         try:
-            print("\nTo",name,":")
+            print("\nTo", name, ":")
             print(msg)
         except:
             print("Problem with data - maybe need to delete a header row?")
-        if i=="c":
-            confirmed=input("\nEnter (Y) to proceed or any other key to skip: ").lower()
-        if i=="s" or confirmed=="y":
+        if i == "c":
+            confirmed = input(
+                "\nEnter (Y) to proceed or any other key to skip: ").lower()
+        if i == "s" or confirmed == "y":
             try:
-                client.messages.create(from_=twilio_number, to=number, body=str(msg))
-                print("\nMessage sent to",name)
+                client.messages.create(
+                    from_=twilio_number, to=number, body=str(msg))
+                print("\nMessage sent to", name)
             except:
                 print("\nSMS message failed - probably over 1600 character limit.")
             time.sleep(1)
@@ -361,23 +356,37 @@ def main_menu():
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
     print("You'll need a valid account with showmyhomework.co.uk and also")
     print("a (free) Twilio.com account. If it's your first time using this")
-    print("please select [E]dit from the menu below and add those details now.")
-    i=input("""\nPress ENTER to send a quick homework summary to your phone contacts
+    print(
+        "please select [E]dit from the menu below and add those details now.")
+    i = input("""\nPress ENTER to send a quick homework summary to your phone contacts
     'T' to also open each task as a separate Tab in your Browser
     'E' to Edit your login details and contacts\n\n> """).lower()
-    if i=="e":
+    if i == "e":
         Secret().edit()
         return("No summary created; User data edited.")
     print()
     return(i)
 
+
+def open_tabs(homework):
+    """If selected, open all homework tasks in separate browser tabs"""
+    javascript = f'window.open("{homework.url}","_blank");'
+    browser.execute_script(javascript)
+
 if __name__ == '__main__':
     menu_choice = "."
-    while menu_choice not in ("t","e",""):
+    while menu_choice not in ("t", "e", ""):
         menu_choice = main_menu()
-    launch_smh()
+    launch_showmyhomework()
     urls = get_task_index()
     initialise_tasks(urls)
     loop_through_tasks()
     message = create_summary()
+    if menu_choice == "t":
+        for homework in Homework.task_list[:-1]:
+            # Last homework should already be open in the active tab
+            thread = threading.Thread(target=open_tabs, args=[homework])
+            thread.start()
+    else:
+        browser.close()
     send_SMS(message)
