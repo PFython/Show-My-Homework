@@ -49,7 +49,7 @@ class Secret():
     security methods.
     """
 
-    def __init__(self, filename="smh-credentials.py"):
+    def __init__(self, filename):
         self.filename = filename
         self.aesname = filename+".aes"
         return
@@ -114,7 +114,7 @@ class Secret():
         else:
             print(
                 "Sorry, Windows Notepad is that only editor I know how to launch just now...")
-        # TODO: Add default text editors for OSX and Linus
+        # TODO: Add default text editors for OSX and Linux
         return
 
     def load(self):
@@ -215,7 +215,7 @@ def get_task_index():
     # Show My Homework uses this format for links:
     # /homeworks/25797227 or /quizzes/26332980
     print("\nYou have", len(links), "homeworks outstanding:\n")
-    urls = [url+str(link) for link in links]
+    urls = ["https://www.showmyhomework.co.uk"+str(link) for link in links]
     print("\n".join(urls))
     return(urls)
 
@@ -355,7 +355,7 @@ def send_SMS(msg):
 def main_menu():
     """Top level menu"""
     global secret
-    secret = Secret().load()
+    secret = Secret("smh-credentials.py").load()
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print("Welcome to the ShowMyHomework (SMH) helper by peter@southwestlondon.tv")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
@@ -367,7 +367,7 @@ def main_menu():
     'T' to also open each task as a separate Tab in your Browser
     'E' to Edit your login details and contacts\n\n> """).lower()
     if i == "e":
-        Secret().edit()
+        Secret("smh-credentials.py").edit()
         return("No summary created; User data edited.")
     print()
     return(i)
