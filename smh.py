@@ -23,6 +23,9 @@ import pyAesCrypt
 import pyautogui
 import pyshorteners
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions
 
 pyautogui.FAILSAFE = True
 url = r"https://www.showmyhomework.co.uk"
@@ -35,7 +38,7 @@ class Secret():
     Python data structures such as lists, dictionaries, strings, sets.
     This class provides a more secure and arguably easier way of
     importing and editing config data in Python without having to
-    convert a different (plain text) formats such as JSON, YAML or TOML.
+    convert a different (plain text) format such as JSON, YAML or TOML.
 
     Although primarily intended for importing .py files, the encrypt()
     and decrypt() methods should work on any file that needs to be
@@ -156,10 +159,10 @@ class Homework:
         self.index = Homework.count
         Homework.count += 1
         Homework.task_list.append(self)
-        self.tiny_url = ""
-        while self.tiny_url == "":
-            self.tiny_url = pyshorteners.Shortener('Tinyurl').short(self.url)[7:]
-        print("http://"+self.tiny_url)
+
+    def get_tiny_url(self):
+        self.tiny_url = pyshorteners.Shortener('Tinyurl').short(self.url)[7:]  # Remove leading 'http://'
+        print(f"{self.url} -> http://{self.tiny_url}")
 
     def __str__(self):
         try:
@@ -176,9 +179,13 @@ class Homework:
 
 def launch_showmyhomework():
     """Launch ShowMyHomework and login"""
+    # TODO: Use selenium implicit waits and explicit checks for elements
+    # TODO: Remove dependency on pyautogui
+    # https://selenium-python.readthedocs.io/waits.html#waits
     print("Contacting ShowMyHomework.co.uk...")
     global browser
     browser = webdriver.Chrome()
+    browser.implicitly_wait(5)
     index_url = r"https://www.showmyhomework.co.uk/todos/issued"
     browser.get(index_url)
     time.sleep(1)
@@ -187,25 +194,37 @@ def launch_showmyhomework():
     pyautogui.hotkey("tab")
     pyautogui.hotkey("tab")
     pyautogui.typewrite(secret.ShowMyHomework['school'])
-    time.sleep(1)
+    #<input type="text" autocomplete="off" id="school-selector-search-box" class="form-control input-lg" placeholder="Enter school name">
+    time.sleep(3)
     pyautogui.hotkey("enter")
     pyautogui.hotkey("tab")
     pyautogui.typewrite(secret.ShowMyHomework['id'])
+    #<input type="text" id="identification" class="input-lg form-control" placeholder="Email/Username">
     pyautogui.hotkey("tab")
     pyautogui.typewrite(secret.ShowMyHomework['password'])
+    #<input type="password" id="password" placeholder="Enter password" class="form-control input-lg" autocomplete="on">
     pyautogui.hotkey("tab")
     pyautogui.hotkey("tab")
     pyautogui.hotkey("tab")
     pyautogui.hotkey("enter")
+    #<button type="submit" class="btn btn-brand ">Log in</button>
     print("Login complete.")
-    time.sleep(2)
+    # time.sleep(4)
     return
 
 
 def get_task_index():
     """Create an index of unfinished homework tasks"""
-    page = browser.page_source
-    soup = bs4.BeautifulSoup(page, "html.parser")
+    # Wait for results to load (Ajax). Clue is presence of checkboxes:
+    # <input type="checkbox" class="toggle">
+    # browser.get("http://somedomain/url_that_delays_loading")
+    try:
+        element = WebDriverWait(browser, 10).until(
+            expected_conditions.presence_of_element_located((By.CLASS_NAME, "toggle"))
+        )
+    finally:
+        print("* Index page loaded - I see checkboxes!")
+    soup = bs4.BeautifulSoup(browser.page_source, "html.parser")
     links = soup.select('h4 a')
     links = [x["href"] for x in links]
     # Show My Homework uses this format for links:
@@ -221,7 +240,9 @@ def initialise_tasks(urls):
     threads = []
     print("\nPreparing data and creating TinyURLs...\n")
     for url in urls:
-        thread = threading.Thread(target=Homework, args=[url])
+        Homework(url)
+    for task in Homework.task_list:
+        thread = threading.Thread(target=task.get_tiny_url)
         thread.start()
         threads.append(thread)
     for thread in threads:
@@ -246,6 +267,7 @@ def get_task_info(homework):
             homework.title = soup.find("h1", class_="main-header-title truncate-text").text.strip()
         except:
             pass
+        time.sleep(1)
     homework.issued = soup.find("div", class_="homework-date issued-on").text.strip()
     homework.due = soup.find("div", class_="homework-date due-on").text.strip()
     homework.description = soup.find("p", class_="homework-description").text.strip()
