@@ -20,16 +20,12 @@ import threading
 import time
 import bs4
 import pyAesCrypt
-import pyautogui
 import pyshorteners
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
-
-pyautogui.FAILSAFE = True
-url = r"https://www.showmyhomework.co.uk"
-
 
 class Secret():
     """
@@ -161,7 +157,12 @@ class Homework:
         Homework.task_list.append(self)
 
     def get_tiny_url(self):
-        self.tiny_url = pyshorteners.Shortener('Tinyurl').short(self.url)[7:]  # Remove leading 'http://'
+        try:
+            self.tiny_url = pyshorteners.Shortener('Tinyurl').short(self.url)[7:]
+        except Exception as E:
+            raise E
+            self.tiny_url = self.url
+        # Remove leading 'http://'
         print(f"{self.url} -> http://{self.tiny_url}")
 
     def __str__(self):
@@ -179,37 +180,22 @@ class Homework:
 
 def launch_showmyhomework():
     """Launch ShowMyHomework and login"""
-    # TODO: Use selenium implicit waits and explicit checks for elements
-    # TODO: Remove dependency on pyautogui
-    # https://selenium-python.readthedocs.io/waits.html#waits
     print("Contacting ShowMyHomework.co.uk...")
     global browser
     browser = webdriver.Chrome()
     browser.implicitly_wait(5)
-    index_url = r"https://www.showmyhomework.co.uk/todos/issued"
-    browser.get(index_url)
-    time.sleep(1)
-    # pyautogui.hotkey("tab")
-    # pyautogui.hotkey("tab")
-    pyautogui.hotkey("tab")
-    pyautogui.hotkey("tab")
-    pyautogui.typewrite(secret.ShowMyHomework['school'])
-    #<input type="text" autocomplete="off" id="school-selector-search-box" class="form-control input-lg" placeholder="Enter school name">
-    time.sleep(3)
-    pyautogui.hotkey("enter")
-    pyautogui.hotkey("tab")
-    pyautogui.typewrite(secret.ShowMyHomework['id'])
-    #<input type="text" id="identification" class="input-lg form-control" placeholder="Email/Username">
-    pyautogui.hotkey("tab")
-    pyautogui.typewrite(secret.ShowMyHomework['password'])
-    #<input type="password" id="password" placeholder="Enter password" class="form-control input-lg" autocomplete="on">
-    pyautogui.hotkey("tab")
-    pyautogui.hotkey("tab")
-    pyautogui.hotkey("tab")
-    pyautogui.hotkey("enter")
-    #<button type="submit" class="btn btn-brand ">Log in</button>
+    browser.get(r"https://www.showmyhomework.co.uk/todos/issued")
+    school = browser.find_element_by_id("school-selector-search-box")
+    school.send_keys(secret.ShowMyHomework['school'])
+    # Click on the first suggestion
+    browser.find_element_by_class_name("suggested-school-address").click()
+    id = browser.find_element_by_id("identification")
+    id.send_keys(secret.ShowMyHomework['id'])
+    password = browser.find_element_by_id("password")
+    password.send_keys(secret.ShowMyHomework['password'])
+    submit = browser.find_element_by_xpath('//*[@id="email-login-form"]/div[5]/button')
+    submit.click()
     print("Login complete.")
-    # time.sleep(4)
     return
 
 
@@ -220,10 +206,9 @@ def get_task_index():
     # browser.get("http://somedomain/url_that_delays_loading")
     try:
         element = WebDriverWait(browser, 10).until(
-            expected_conditions.presence_of_element_located((By.CLASS_NAME, "toggle"))
-        )
+            expected_conditions.presence_of_element_located((By.CLASS_NAME, "toggle")))
     finally:
-        print("* Index page loaded - I see checkboxes!")
+        print("\nIndex page loaded - I see checkboxes!")
     soup = bs4.BeautifulSoup(browser.page_source, "html.parser")
     links = soup.select('h4 a')
     links = [x["href"] for x in links]
@@ -253,21 +238,19 @@ def initialise_tasks(urls):
 def get_task_info(homework):
     global browser
     try:
+        # SMH server appears to reject requests > 1 every 0.5 seconds or so
+        time.sleep(0.75)
         browser.get(homework.url)
     except Exception as E:
         print("\n*** STAY CALM AND RUN THE SMH HELPER PROGRAMME AGAIN ***\n")
         print("Occasionally ShowMyHomework.co.uk isn't ready to talk to us...\n")
         browser.close()
-    homework.title = ""
-    while homework.title == "":
-        # Wait for AJAX to populate the web page, including a proper title
-        page = browser.page_source
-        soup  = bs4.BeautifulSoup(page, "html.parser")
-        try:
-            homework.title = soup.find("h1", class_="main-header-title truncate-text").text.strip()
-        except:
-            pass
-        time.sleep(1)
+    # Wait for AJAX to populate the web page, including a proper title
+    try:
+        element = WebDriverWait(browser, 10).until(expected_conditions.presence_of_element_located((By.CLASS_NAME, "row")))
+    finally:
+        soup  = bs4.BeautifulSoup(browser.page_source, "html.parser")
+    homework.title = soup.find("h1", class_="main-header-title truncate-text").text.strip()
     homework.issued = soup.find("div", class_="homework-date issued-on").text.strip()
     homework.due = soup.find("div", class_="homework-date due-on").text.strip()
     homework.description = soup.find("p", class_="homework-description").text.strip()
