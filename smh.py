@@ -1,7 +1,7 @@
 #! python3
 
 # This app is intended to scrape
-# www.showmyhomework.co.uk and send a short
+# www.satchelone.com and send a short
 # SMS text summary using Twilio. Its most
 # useful features are (hopefully) that it
 # calculates a quick estimate of total effort
@@ -146,7 +146,7 @@ class Secret():
 
 
 class Homework:
-    """A homework task on showmyhomework.co.uk"""
+    """A homework task on satchelone.com"""
     count = 0
     task_list = []
 
@@ -180,20 +180,25 @@ class Homework:
 
 def launch_showmyhomework():
     """Launch ShowMyHomework and login"""
-    print("Contacting ShowMyHomework.co.uk...")
+    print("Contacting satchelone.com...")
     global browser
     browser = webdriver.Chrome()
     browser.implicitly_wait(5)
-    browser.get(r"https://www.showmyhomework.co.uk/todos/issued")
+    browser.get(r"https://www.satchelone.com/login?userType=student")
     school = browser.find_element_by_id("school-selector-search-box")
-    school.send_keys(secret.ShowMyHomework['school'])
+    # Slow things down for school selector to work
+    school.send_keys(secret.ShowMyHomework['school'][:3])
+    time.sleep(1)
+    school.send_keys(secret.ShowMyHomework['school'][3:])
+    time.sleep(1)
     # Click on the first suggestion
     browser.find_element_by_class_name("suggested-school-address").click()
     id = browser.find_element_by_id("identification")
     id.send_keys(secret.ShowMyHomework['id'])
     password = browser.find_element_by_id("password")
     password.send_keys(secret.ShowMyHomework['password'])
-    submit = browser.find_element_by_xpath('//*[@id="email-login-form"]/div[5]/button')
+    # submit = browser.find_element_by_xpath('//*[@id="email-login-form"]/div[5]/button')
+    submit = browser.find_element_by_xpath('//*[@id="email-login-form"]/div[4]/button')
     submit.click()
     print("Login complete.")
     return
@@ -215,7 +220,7 @@ def get_task_index():
     # Show My Homework uses this format for links:
     # /homeworks/25797227 or /quizzes/26332980
     print("\nYou have", len(links), "homeworks outstanding:\n")
-    urls = ["https://www.showmyhomework.co.uk"+str(link) for link in links]
+    urls = ["https://www.satchelone.com"+str(link) for link in links]
     print("\n".join(urls))
     return(urls)
 
@@ -243,7 +248,7 @@ def get_task_info(homework):
         browser.get(homework.url)
     except Exception as E:
         print("\n*** STAY CALM AND RUN THE SMH HELPER PROGRAMME AGAIN ***\n")
-        print("Occasionally ShowMyHomework.co.uk isn't ready to talk to us...\n")
+        print("Occasionally satchelone.com isn't ready to talk to us...\n")
         browser.close()
     # Wait for AJAX to populate the web page, including a proper title
     try:
@@ -254,7 +259,11 @@ def get_task_info(homework):
     homework.issued = soup.find("div", class_="homework-date issued-on").text.strip()
     homework.due = soup.find("div", class_="homework-date due-on").text.strip()
     homework.description = soup.find("p", class_="homework-description").text.strip()
-    homework.info = soup.find("div", class_="well homework-information").text.strip()
+    try:
+        homework.info = soup.find("div", class_="well homework-information background-color-gray-lighter").text.strip()
+    except:
+        print(f"\n* No homework information for {homework.url}")
+        homework.info = ""
     homework.subject = soup.find("div", class_="ember-view teacher-text __assignment-teacher-text__1067e").text.split("- ")[-1].strip()
 
 
@@ -359,7 +368,7 @@ def main_menu():
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print("Welcome to the ShowMyHomework (SMH) helper by peter@southwestlondon.tv")
     print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-    print("You'll need a valid account with showmyhomework.co.uk and also")
+    print("You'll need a valid account with satchelone.com and also")
     print("a (free) Twilio.com account. If it's your first time using this")
     print(
         "please select [E]dit from the menu below and add those details now.")
