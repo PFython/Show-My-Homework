@@ -26,6 +26,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
+from pathlib import Path
+os.chdir(Path(__file__).parent)
 
 class Secret():
     """
@@ -188,7 +190,7 @@ def launch_showmyhomework():
     school = browser.find_element_by_id("school-selector-search-box")
     # Slow things down for school selector to work
     school.send_keys(secret.ShowMyHomework['school'][:3])
-    time.sleep(1)
+    time.sleep(5)
     school.send_keys(secret.ShowMyHomework['school'][3:])
     time.sleep(1)
     # Click on the first suggestion
@@ -260,11 +262,11 @@ def get_task_info(homework):
     homework.due = soup.find("div", class_="homework-date due-on").text.strip()
     homework.description = soup.find("p", class_="homework-description").text.strip()
     try:
-        homework.info = soup.find("div", class_="well homework-information background-color-gray-lighter").text.strip()
+        homework.info = soup.find("div", class_="well homework-information").text.strip()
     except:
-        print(f"\n* No homework information for {homework.url}")
+        print(f"\n* No additional homework information for {homework.url}")
         homework.info = ""
-    homework.subject = soup.find("div", class_="ember-view teacher-text __assignment-teacher-text__1067e").text.split("- ")[-1].strip()
+    homework.subject = soup.find("div", class_="homework color-box").next.split("- ")[-1].strip()
 
 
 def calculate_duration(homework):
