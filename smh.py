@@ -266,7 +266,11 @@ def get_task_info(homework):
     except:
         print(f"\n* No additional homework information for {homework.url}")
         homework.info = ""
-    homework.subject = soup.find("div", class_="homework color-box").next.split("- ")[-1].strip()
+    try:
+        homework.subject = soup.find("div", class_="homework color-box").next.split("- ")[-1].strip()
+    except AttributeError:
+        # e.g. Quizzes have subject as it's own field
+        homework.subject = soup.find("h3", class_="subject").text
 
 
 def calculate_duration(homework):
