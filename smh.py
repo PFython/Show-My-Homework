@@ -220,7 +220,7 @@ def get_task_index():
     links = soup.select('h4 a')
     links = [x["href"] for x in links]
     # Show My Homework uses this format for links:
-    # /homeworks/25797227 or /quizzes/26332980
+    # /homeworks/25797227 or /quizzes/26332980 or /class-tests/37849384
     print("\nYou have", len(links), "homeworks outstanding:\n")
     urls = ["https://www.satchelone.com"+str(link) for link in links]
     print("\n".join(urls))
@@ -269,9 +269,12 @@ def get_task_info(homework):
     try:
         homework.subject = soup.find("div", class_="homework color-box").next.split("- ")[-1].strip()
     except AttributeError:
-        # e.g. Quizzes have subject as it's own field
-        homework.subject = soup.find("h3", class_="subject").text
-
+        try:
+            # Quizzes have subject as it's own field
+            homework.subject = soup.find("h3", class_="subject").text
+        except:
+            # Purple category - tests
+            homework.subject = soup.find("p", class_="assignment-description-title").next.split("- ")[-1].strip()
 
 def calculate_duration(homework):
     """Calculate or estimate duration (mins) for each task"""
